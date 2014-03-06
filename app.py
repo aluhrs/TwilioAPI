@@ -1,4 +1,5 @@
 import os
+from flask import url_for
 
 from flask import Flask
 from flask import Response
@@ -53,6 +54,37 @@ def hello():
     response = twiml.Response()
     response.say('Hello there! You have successfully configured a web hook.')
     response.say('Good luck on your Twilio quest!', voice='woman')
+    return Response(str(response), mimetype='text/xml')
+
+# Generate TwiML instructions for an incoming call
+@app.route('/incoming/call', methods=['GET','POST'])
+def incoming_call():
+    response = twiml.Response()
+    with response.gather(numDigits=1, action="/handle-key", method="GET") as g:
+        g.say('Press 1 to hear a message.', voice='woman')
+    
+    return Response(str(response), mimetype='text/xml')
+
+@app.route('/handle-key', methods=["GET", "POST"])
+def handle_key():
+    response = twiml.Response()
+    digit_pressed = request.values.get('Digits', None)
+    if digit_pressed == "1":
+        response.redirect(url_for('incoming_call_digits'))
+    else:
+        response.say("This failed. Goodbye.")
+    return Response(str(response), mimetype='text/xml') 
+
+@app.route('/incoming/callresponse', methods=['GET','POST'])
+def incoming_call_digits():
+    response = twiml.Response()
+    response.say("This is our cool message!")
+    return Response(str(response), mimetype='text/xml')
+
+@app.route('/incoming/sms', methods=['GET', 'POST'])
+def incoming_sms():
+    response = twiml.Response()
+    response.sms('I just responded to a text message. Huzzah!')
     return Response(str(response), mimetype='text/xml')
 
 if __name__ == '__main__':
